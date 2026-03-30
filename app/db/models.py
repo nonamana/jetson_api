@@ -10,7 +10,7 @@ class Jetson(Base):
     jetson_id = Column(Integer, primary_key=True, index=True) # AUTO_INCREMENT(자동 증가)
     jetson_wp = Column(String(10))
     jetson_loc = Column(String(20))
-    status = Column(Boolean)
+    jetson_status = Column(Boolean)
     ip_addr = Column(String(15))
     port = Column(Integer)
 
@@ -19,7 +19,7 @@ class Sensor(Base):
     sen_id = Column(Integer, primary_key=True, index=True)
     sensor_type = Column(String(10)) 
     sen_name = Column(String(20))    
-    status = Column(String(20))      
+    sensor_status = Column(String(20))      
     jetson_id = Column(Integer, ForeignKey("jetson.jetson_id"))
 
 class StateCode(Base):
@@ -59,7 +59,7 @@ class SituTrans(Base):
     sen_id = Column(Integer, ForeignKey("sensor.sen_id"), primary_key=True)
     time = Column(DateTime, primary_key=True, default=datetime.utcnow)
     jetson_id = Column(Integer, ForeignKey("jetson.jetson_id"))
-    state_code = Column(Integer, ForeignKey("state_code.st_cd_id")) 
+    situ_state = Column(String(50)) 
     detail = Column(String(200)) 
 
 class CameraInfo(Base):
