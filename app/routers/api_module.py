@@ -1,6 +1,3 @@
-# 스마트폰 앱이 접속할 수 있는 주소(URL)
-# 어떤 모듈의 어떤 함수를 호출할건지 결정
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
@@ -18,6 +15,7 @@ def register_jetson(request: schemas.JetsonCreate, db: Session = Depends(get_db)
 @router.post("/sensors", response_model=schemas.SensorResponse, summary="센서 등록 (심박/온습도)")
 def register_sensor(request: schemas.SensorCreate, db: Session = Depends(get_db)):
     """관리자 앱에서 센서를 젯슨에 할당합니다."""
+    # 내부적으로 schemas.SensorCreate의 sen_status를 사용하게 됨
     return crud.create_sensor(db, request)
 
 @router.post("/cameras", summary="CCTV 카메라 등록")
@@ -37,6 +35,10 @@ def trigger_hazard_alert(alert: schemas.HazardAlert, db: Session = Depends(get_d
     안전 감지 모듈이나 카메라 모듈이 위험을 감지하면 이 API를 호출합니다.
     API 서버는 이 정보를 받아 스마트폰 앱으로 푸시 알림을 전달합니다.
     """
-    print(f"🚨 [위험 감지!] 젯슨 {alert.jetson_id} / 센서 {alert.sen_id} : {alert.detail}") # 젯슨 id, 센서 id, 디테일 내용
-    # 실제 앱 알림(FCM, 웹소켓 등) 전송 로직이 들어갈 자리
+    # 🔍 변경 포인트: alert.risk_level 대신 DDL과 맞춘 alert.situ_state 사용
+    print(f"🚨 [위험 감지!] 젯슨 {alert.jetson_id} / 센서 {alert.sen_id} : {alert.situ_state} - {alert.detail}")
+    
+    # 여기서 나중에 CRUD를 통해 situ_trans 테이블에 기록을 남기는 로직을 추가하면 완벽해!
+    # 예: crud.create_situ_record(db, alert)
+    
     return {"message": "Alert sent to App successfully", "data": alert}
