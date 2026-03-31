@@ -1,4 +1,4 @@
-서버 on: uvicorn app.main:app --reload
+서버 on: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 포트 설정할 땐 뒤에 --port 8080, 기본은 8000
 
 API 서버 주소: http://192.168.0.64:8000
