@@ -1,1 +1,31 @@
+# 1. 파이썬 캐시 파일
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 2. 파이썬 가상환경
 .venv/
+venv/
+env/
+
+# 3. 환경변수 및 보안 파일
+.env
+*.secret
+
+# 4. AI 모델 및 데이터 파일
+*.pt
+*.pth
+*.onnx
+*.weights
+*.h5
+
+# 5. 데이터베이스 및 로그
+*.sqlite3
+*.log
+
+# 6. 에디터 및 OS 설정 파일
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

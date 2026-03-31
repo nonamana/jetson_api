@@ -4,6 +4,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
+from datetime import date
 
 # --- 1. 젯슨 (Jetson) 관련 규격 ---
 class JetsonCreate(BaseModel):
@@ -22,11 +23,12 @@ class JetsonResponse(JetsonCreate):
 class SensorCreate(BaseModel):
     sensor_type: str
     sen_name: str
-    sen_status: bool = True # sensor_status에서 sen_status로 수정 (DDL 일치)
-    jetson_id: int
+    mqtt_topic: str 
+    # ❌ jetson_id 삭제
 
 class SensorResponse(SensorCreate):
     sen_id: int
+    register_date: date 
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -57,12 +59,12 @@ class HazardAlert(BaseModel):
 # 온습도 전송용 (th_trans)
 class ThTransCreate(BaseModel):
     sen_id: int
-    jetson_id: int
+    # ❌ jetson_id 삭제
     temp: float
-    humd: float
+    humid: float # ✏️ 이름 변경 완료!
 
 # 심박수 전송용 (hb_trans)
 class HbTransCreate(BaseModel):
     sen_id: int
-    jetson_id: int
+    # ❌ jetson_id 삭제
     hr: float

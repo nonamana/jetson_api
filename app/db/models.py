@@ -1,10 +1,11 @@
 # DB 테이블을 파이썬 코드로 번역
 # DB에 저장되는 원본 테이블 형태
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.database import Base
+
 
 # 1. 젯슨 (jetson) 테이블
 class Jetson(Base):
@@ -22,8 +23,8 @@ class Sensor(Base):
     sen_id = Column(Integer, primary_key=True, index=True)
     sensor_type = Column(String(100), nullable=False) 
     sen_name = Column(String(200), nullable=False)    
-    sen_status = Column(Boolean, nullable=False) # DDL의 sen_status와 일치시킴 (기존 sensor_status에서 수정)
-    jetson_id = Column(Integer, ForeignKey("jetson.jetson_id"), nullable=False)
+    mqtt_topic = Column(String(100), nullable=False)
+    register_date = Column(Date, default=datetime.utcnow)
 
 # 3. 상태 (state_code) 테이블
 class StateCode(Base):
@@ -49,18 +50,18 @@ class Manage(Base):
 class ThTrans(Base):
     __tablename__ = "th_trans"
     sen_id = Column(Integer, ForeignKey("sensor.sen_id"), primary_key=True)
-    time = Column(DateTime, primary_key=True, default=datetime.utcnow) # 복합키 설정
-    jetson_id = Column(Integer, ForeignKey("jetson.jetson_id"), nullable=False)
+    time = Column(DateTime, primary_key=True, default=datetime.utcnow)
+    # ❌ jetson_id 삭제됨
     temp = Column(Float) 
-    humd = Column(Float) 
+    humid = Column(Float) # ✏️ humd -> humid 로 이름 변경됨!
 
 # 7. 심박밴드 전송 (hb_trans) 테이블
 class HbTrans(Base):
     __tablename__ = "hb_trans"
     sen_id = Column(Integer, ForeignKey("sensor.sen_id"), primary_key=True)
-    time = Column(DateTime, primary_key=True, default=datetime.utcnow) # 복합키 설정
-    jetson_id = Column(Integer, ForeignKey("jetson.jetson_id"), nullable=False)
-    hr = Column(Float)   
+    time = Column(DateTime, primary_key=True, default=datetime.utcnow)
+    # ❌ jetson_id 삭제됨
+    hr = Column(Float)
 
 # 8. 상황 전송 (situ_trans) 테이블
 class SituTrans(Base):

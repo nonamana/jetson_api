@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
@@ -7,10 +7,19 @@ from app import schemas
 
 router = APIRouter(prefix="/api", tags=["API 호출 모듈"])
 
-@router.post("/jetson", response_model=schemas.JetsonResponse, summary="젯슨 장비 초기 등록")
-def register_jetson(request: schemas.JetsonCreate, db: Session = Depends(get_db)):
-    """관리자 스마트폰에서 젯슨 자체를 등록합니다."""
-    return crud.create_jetson(db, request)
+@router.get("/jetson", response_model=schemas.JetsonResponse, summary="젯슨 장비 정보 조회")
+def get_jetson(db: Session = Depends(get_db)):
+    """
+    스마트폰 앱에서 이 주소로 GET 요청을 보내면,
+    젯슨이 미리 저장해둔 자기 자신의 정보를 뱉어냅니다.
+    """
+    jetson_info = crud.get_jetson_info(db)
+    
+    # 혹시라도 DB에 정보가 없다면 404 에러 반환
+    if not jetson_info:
+        raise HTTPException(status_code=404, detail="젯슨 정보가 DB에 없습니다.")
+        
+    return jetson_info
 
 @router.post("/sensors", response_model=schemas.SensorResponse, summary="센서 등록 (심박/온습도)")
 def register_sensor(request: schemas.SensorCreate, db: Session = Depends(get_db)):
@@ -24,10 +33,10 @@ def register_camera(request: schemas.CameraCreate, db: Session = Depends(get_db)
     sensor = crud.create_camera(db, request)
     return {"message": "Camera registered successfully", "sen_id": sensor.sen_id}
 
-@router.get("/jetson/{jetson_id}/sensors", response_model=List[schemas.SensorResponse], summary="구독할 센서 목록 조회")
-def get_jetson_sensors(jetson_id: int, db: Session = Depends(get_db)):
-    """앱이나 '안전 감지 모듈'이 어떤 센서를 구독(감시)해야 할지 목록을 가져갑니다."""
-    return crud.get_sensors_by_jetson(db, jetson_id)
+@router.get("/sensors", response_model=List[schemas.SensorResponse], summary="구독할 센서 목록 조회")
+def get_sensors(db: Session = Depends(get_db)):
+    """현재 젯슨에 등록된 모든 센서(MQTT 구독 대상) 목록을 가져옵니다."""
+    return crud.get_all_sensors(db)
 
 @router.post("/hazard/alert", summary="위험 정보 중계 (앱 알림 발송)")
 def trigger_hazard_alert(alert: schemas.HazardAlert, db: Session = Depends(get_db)):

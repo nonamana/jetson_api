@@ -3,14 +3,23 @@ from app.db import models
 from app import schemas
 
 # 1. 젯슨 장비 등록
-def create_jetson(db: Session, jetson: schemas.JetsonCreate):
-    # **jetson.model_dump()는 schemas와 models의 변수명이 100% 같아야 작동합니다.
-    # 우리 아까 둘 다 jetson_status로 맞춰놨으니 아주 잘 작동할 거예요!
-    db_jetson = models.Jetson(**jetson.model_dump())
-    db.add(db_jetson)
-    db.commit()
-    db.refresh(db_jetson)
-    return db_jetson
+def init_jetson_info(db: Session, jetson_data: dict):
+    """서버 부팅 시 젯슨 초기 정보를 세팅합니다 (중복 방지)."""
+    # 이미 정보가 있는지 확인 (서버 껐다 켤 때마다 에러 나는 것 방지)
+    existing = db.query(models.Jetson).first()
+    
+    if not existing:
+        # 정보가 없으면 새로 저장
+        new_jetson = models.Jetson(**jetson_data)
+        db.add(new_jetson)
+        db.commit()
+        db.refresh(new_jetson)
+        return new_jetson
+    return existing
+
+def get_jetson_info(db: Session):
+    """DB에 저장된 젯슨 정보를 하나 꺼내옵니다."""
+    return db.query(models.Jetson).first()
 
 # 2. 센서 등록 (심박/온습도 등)
 def create_sensor(db: Session, sensor: schemas.SensorCreate):
@@ -21,24 +30,21 @@ def create_sensor(db: Session, sensor: schemas.SensorCreate):
     db.refresh(db_sensor)
     return db_sensor
 
-# 3. 특정 젯슨에 연결된 센서 목록 조회
-def get_sensors_by_jetson(db: Session, jetson_id: int):
-    return db.query(models.Sensor).filter(models.Sensor.jetson_id == jetson_id).all()
+def get_all_sensors(db: Session):
+    return db.query(models.Sensor).all()
 
-# 4. 카메라 등록 (센서 테이블 + 카메라 정보 테이블 두 군데 저장)
 def create_camera(db: Session, cam_data: schemas.CameraCreate):
-    # (1) 센서(Sensor) 테이블에 기본 정보 먼저 저장
+    # 센서 테이블에 먼저 등록 (외래키 및 상태 컬럼 제거 반영)
     db_sensor = models.Sensor(
         sensor_type=cam_data.sensor_type,
         sen_name=cam_data.sen_name,
-        sen_status=cam_data.sen_status, # 🔍 수정: status -> sen_status
-        jetson_id=cam_data.jetson_id
+        mqtt_topic=cam_data.mqtt_topic
     )
     db.add(db_sensor)
     db.commit()
     db.refresh(db_sensor)
 
-    # (2) 카메라 정보(CameraInfo) 테이블에 세부 정보 저장 (FK: sen_id 사용)
+    # 카메라 정보 테이블에 등록 (sen_id 외래키는 그대로 유지)
     db_camera = models.CameraInfo(
         sen_id=db_sensor.sen_id,
         ip_address=cam_data.ip_address,
