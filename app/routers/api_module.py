@@ -71,7 +71,7 @@ def register_sensors(req: schemas.SensorRegisterReq, db: Session = Depends(get_d
 def register_camera(req: AppCameraReq, db: Session = Depends(get_db)):
     """앱에서 받은 IP 정보를 DB에 저장하고 VLM 서버로 전달할 데이터를 로그에 찍습니다."""
     camera_info = crud.register_camera_info(db, req.ip_address, req.camera_id, req.camera_pw)
-    
+    # req가 스마트폰에서 보낸 ip_address, id, password가 담겨있는 json 형식
     if camera_info is None:
         raise HTTPException(status_code=400, detail="이미 등록된 카메라입니다.")
     elif camera_info is False:

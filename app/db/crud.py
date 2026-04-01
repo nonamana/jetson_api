@@ -68,7 +68,7 @@ def register_multiple_sensors(db: Session, jetson_id: int, sensors: List[schemas
 # ==========================================
 def register_camera_info(db: Session, ip_address: str, camera_id: str, camera_pw: str):
     """카메라 중복을 검사하고 DB에 자동 생성된 이름/위치와 함께 저장합니다."""
-    # 1. 중복 검사
+    # 1. 중복 검사 (같은 ip_address의 db가 있는지 비교)
     existing_camera = db.query(models.CameraInfo).filter(models.CameraInfo.ip_address == ip_address).first()
     if existing_camera:
         return None  
