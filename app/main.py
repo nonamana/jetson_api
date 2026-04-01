@@ -9,6 +9,7 @@ from zeroconf.asyncio import AsyncZeroconf
 from app.db.database import SessionLocal, engine
 from app.db import models, crud
 from app.routers import api_module
+from app.routers.api_module import manager
 
 # 1. DB 테이블 자동 생성
 models.Base.metadata.create_all(bind=engine)
@@ -88,16 +89,21 @@ app = FastAPI(
 # API 라우터 포함
 app.include_router(api_module.router)
 
-# 실시간 웹소켓 엔드포인트
+# ==========================================
+#   실시간 웹소켓 엔드포인트
+# ==========================================
 @app.websocket("/ws/alerts")
 async def websocket_alerts(websocket: WebSocket):
     """관리자 스마트폰과 연결을 맺고 세션을 유지합니다."""
     await manager.connect(websocket)
     print(f"🔗 [웹소켓] 새 기기 연결됨 (현재 연결 수: {len(manager.active_connections)})")
+    
     try:
         while True:
+            # 클라이언트(앱)가 보내는 핑(Ping)이나 메시지를 대기
             data = await websocket.receive_text()
             print(f"📱 [앱 응답]: {data}")
+            
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         print("🔌 [웹소켓] 기기 연결 종료")

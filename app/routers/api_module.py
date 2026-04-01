@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Response, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Response, status, BackgroundTasks, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -102,25 +102,6 @@ def get_cameras(db: Session = Depends(get_db)):
         })
     return {"status": "success", "data": result_data}
 
-
-# ==========================================
-#  [4단계] 위험 분석 정보 수신 및 내부 토스 API
-# ==========================================
-@router.post("/internal/vlm-analysis", summary="위험 감지 데이터 안전 감지 모듈로 전달")
-async def receive_vlm_analysis(req: schemas.VlmAnalysisReq, background_tasks: BackgroundTasks):
-    """
-    VLM에서 보낸 위험 정보를 받아서 내부 안전 감지 모듈로 토스합니다.
-    웹소켓 푸시와 DB 저장은 안전 감지 모듈이 백그라운드에서 처리합니다.
-    """
-    # 🌟 나중에 안전 감지 모듈 개발 시 아래 주석을 풀고 호출하세요.
-    # background_tasks.add_task(process_hazard_event, req)
-    
-    print(f"📡 [API 모듈] VLM 데이터 수신 및 내부 전달: {req.camera_name}")
-    
-    # VLM 모듈에게는 텍스트 없이 200 OK만 즉시 응답
-    return Response(status_code=status.HTTP_200_OK)
-
-
 # ==========================================
 #  [추가] 일반 센서 목록 조회 API (카메라 제외)
 # ==========================================
@@ -136,3 +117,46 @@ def get_sensors(db: Session = Depends(get_db)):
             "sen_locate": sensor.sen_locate
         })
     return {"status": "success", "data": result_data}
+
+# ==========================================
+#  [4단계] 위험 분석 정보 수신 및 내부 토스 API : 안전 감지 모듈 추가 시 수정
+# ==========================================
+@router.post("/internal/vlm-analysis", summary="위험 감지 데이터 안전 감지 모듈로 전달")
+async def receive_vlm_analysis(req: schemas.VlmAnalysisReq, background_tasks: BackgroundTasks):
+    """
+    VLM에서 보낸 위험 정보를 받아서 내부 안전 감지 모듈로 토스합니다.
+    웹소켓 푸시와 DB 저장은 안전 감지 모듈이 백그라운드에서 처리합니다.
+    """
+    # 🌟 나중에 안전 감지 모듈 개발 시 아래 주석을 풀고 호출하세요.
+    # background_tasks.add_task(process_hazard_event, req)
+    
+    print(f"📡 [API 모듈] VLM 데이터 수신 및 내부 전달: {req.camera_name}")
+    
+    # VLM 모듈에게는 텍스트 없이 200 OK만 즉시 응답
+    return Response(status_code=status.HTTP_200_OK)
+
+# ==========================================
+#   웹소켓 연결 매니저 (Session 관리)
+# ==========================================
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        """내부 모듈(예: 위험 전달 모듈)이 이 함수를 호출해서 알림을 쏩니다!"""
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                pass
+
+# 메인 파일과 다른 모듈에서 쓸 수 있도록 인스턴스화
+manager = ConnectionManager()

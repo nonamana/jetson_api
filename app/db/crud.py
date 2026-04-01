@@ -111,32 +111,6 @@ def get_cctv_list(db: Session):
     return results
 
 # ==========================================
-#  [4단계] 위험 이벤트 DB 저장 로직
-# ==========================================
-def create_hazard_event(db: Session, req: schemas.VlmAnalysisReq):
-    """VLM에서 넘어온 위험 정보를 Event 테이블에 저장합니다."""
-    ev_code = db.query(models.EventCode).filter(models.EventCode.ev_code_name == req.ev_code_name).first()
-    if not ev_code:
-        ev_code = models.EventCode(ev_code_name=req.ev_code_name, ev_code_desc="자동 생성된 위험 코드")
-        db.add(ev_code)
-        db.flush()
-
-    sensor = db.query(models.Sensor).filter(models.Sensor.sen_name == req.camera_name).first()
-    sen_id = sensor.sen_id if sensor else None
-
-    new_event = models.Event(
-        ev_code_id=ev_code.ev_code_id,
-        sen_id=sen_id,
-        message=req.risk_text,
-        time=datetime.now() 
-    )
-    db.add(new_event)
-    db.commit()
-    db.refresh(new_event)
-    
-    return new_event
-
-# ==========================================
 #  [수정] 센서 목록 조회 로직 (카메라 제외)
 # ==========================================
 def get_sensor_list(db: Session):
